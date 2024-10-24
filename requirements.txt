@@ -1,0 +1,20 @@
+# FastAPI framework
+fastapi
+
+# SQLModel for ORM (built on top of SQLAlchemy and Pydantic)
+sqlmodel
+
+# Database driver for PostgreSQL
+psycopg2
+
+# Alembic for database migrations
+alembic
+
+# Uvicorn for ASGI server (running FastAPI)
+uvicorn
+
+# Pydantic for data validation and settings management
+pydantic
+
+# Optional: python-dotenv for environment variable management
+python-dotenv
