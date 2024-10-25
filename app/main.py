@@ -1,15 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from .routes import students, users
 from .core.database import create_db_and_tables
-from .models.attendance import Attendance
-from .models.student import Student, StudentProgress
-from .models.user import User
 
 app = FastAPI(
     title="SportView API",
     description="API for managing students, instructors, attendance, and more",
-    version="1.0.0"
+    version="1.0.0",
 )
+
+app.include_router(students.router, prefix="/api/v1", tags=["Students"])
+app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 
 origins = ["*"]
 
