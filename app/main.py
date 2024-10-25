@@ -12,7 +12,7 @@ app = FastAPI(
 app.include_router(students.router, prefix="/api/v1", tags=["Students"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 
-origins = ["*"]
+origins = ["http://localhost:8100"]
 
 app.add_middleware(
     CORSMiddleware,
