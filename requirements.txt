@@ -18,3 +18,7 @@ pydantic
 
 # Optional: python-dotenv for environment variable management
 python-dotenv
+
+bcrypt
+
+passlib
