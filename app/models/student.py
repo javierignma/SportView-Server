@@ -6,8 +6,8 @@ class Student(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     instructor_id: int = Field(foreign_key="user.id")
     name: str
-    email: str
-    rut: str
+    email: str = Field(index=True)
+    rut: str = Field(index=True)
     age: Optional[int]
     weight: Optional[float]
     height: Optional[float]
