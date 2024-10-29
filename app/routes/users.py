@@ -5,13 +5,13 @@ from ..core.database import get_session
 from ..models.user import User
 from ..schemas.user import UserResponseSchema, UserCredentialsSchema
 from ..services.password_service import hash_password, verify_password 
+from ..services.jwt_service import create_access_token, create_refresh_token
 import urllib.parse
 
 router = APIRouter()
 
 @router.post("/", response_model=UserResponseSchema)
 def create_user(user: User, session: Session = Depends(get_session)):
-    
     try:
         statement = select(User).where(User.email == user.email)
         result = session.exec(statement)
@@ -58,8 +58,6 @@ def read_user_by_email(user_email: str, session: Session = Depends(get_session))
     
     return user
 
-# For now this route will respond with UserResponseSchema.
-# This should respond with a jwt or something like that.
 @router.post("/login/", response_model=UserResponseSchema)
 def login(user_credentials: UserCredentialsSchema, session: Session = Depends(get_session)):
     try:
@@ -71,5 +69,17 @@ def login(user_credentials: UserCredentialsSchema, session: Session = Depends(ge
 
     if not user or not verify_password(user_credentials.password, user.password):
         raise HTTPException(status_code=401, detail="Wrong credetials.")
+
+    # Generate token
+    access_token = create_access_token({"sub": user.email})
+    refresh_token = create_refresh_token({"sub": user.email})
+    
+    user = UserResponseSchema(
+        email=user.email, 
+        first_name=user.first_name, 
+        last_name=user.last_name, 
+        access_token=access_token, 
+        refresh_token=refresh_token
+    )
     
     return user
