@@ -5,7 +5,7 @@ from ..core.database import get_session
 from ..models.user import User
 from ..schemas.user import UserResponseSchema, UserCredentialsSchema
 from ..services.password_service import hash_password, verify_password 
-from ..services.jwt_service import create_access_token, create_refresh_token
+from ..services.jwt_service import create_access_token, create_refresh_token, token_verifier
 import urllib.parse
 
 router = APIRouter()
@@ -31,7 +31,7 @@ def create_user(user: User, session: Session = Depends(get_session)):
     return user
 
 @router.get("/id/{user_id}", response_model=UserResponseSchema)
-def read_user_by_id(user_id: int, session: Session = Depends(get_session)):
+def read_user_by_id(user_id: int, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
     try:  
         user = session.get(User, user_id)
     except Exception as e:
@@ -43,7 +43,7 @@ def read_user_by_id(user_id: int, session: Session = Depends(get_session)):
     return user
 
 @router.get("/email/{user_email}", response_model=UserResponseSchema)
-def read_user_by_email(user_email: str, session: Session = Depends(get_session)):
+def read_user_by_email(user_email: str, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
     try:
         user_email = urllib.parse.unquote(user_email)
 
@@ -72,14 +72,18 @@ def login(user_credentials: UserCredentialsSchema, session: Session = Depends(ge
 
     # Generate token
     access_token = create_access_token({"sub": user.email})
-    refresh_token = create_refresh_token({"sub": user.email})
+    #refresh_token = create_refresh_token({"sub": user.email})
     
     user = UserResponseSchema(
         email=user.email, 
         first_name=user.first_name, 
         last_name=user.last_name, 
         access_token=access_token, 
-        refresh_token=refresh_token
+        #refresh_token=refresh_token
     )
     
     return user
+
+@router.get("/verify-token/")
+def verify_token(dependencies = Depends(token_verifier)):
+    return {"message": "Valid token."}
