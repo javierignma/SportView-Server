@@ -25,4 +25,4 @@ passlib
 
 python-jose[cryptography]
 
-gunicorn
+hypercorn
