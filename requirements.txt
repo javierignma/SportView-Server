@@ -24,3 +24,5 @@ bcrypt
 passlib
 
 python-jose[cryptography]
+
+gunicorn
