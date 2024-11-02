@@ -17,6 +17,7 @@ def create_user(user: User, session: Session = Depends(get_session)):
         result = session.exec(statement)
     except Exception as e:
         print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
     if result.first():
         raise HTTPException(status_code=409, detail="Email is already in use.")
@@ -28,6 +29,7 @@ def create_user(user: User, session: Session = Depends(get_session)):
         session.refresh(user)
     except Exception as e:
         print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
     return user
 
 @router.get("/id/{user_id}", response_model=UserResponseSchema)
@@ -36,6 +38,7 @@ def read_user_by_id(user_id: int, session: Session = Depends(get_session), depen
         user = session.get(User, user_id)
     except Exception as e:
         print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
         
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -52,6 +55,7 @@ def read_user_by_email(user_email: str, session: Session = Depends(get_session),
         user = result.first()
     except Exception as e:
         print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -66,6 +70,7 @@ def login(user_credentials: UserCredentialsSchema, session: Session = Depends(ge
         user = result.first()
     except Exception as e:
         print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
     if not user or not verify_password(user_credentials.password, user.password):
         raise HTTPException(status_code=401, detail="Wrong credetials.")
