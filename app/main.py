@@ -9,7 +9,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-app.include_router(students.router, prefix="/api/v1", tags=["Students"])
+app.include_router(students.router, prefix="/api/v1/students", tags=["Students"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
 
 origins = ["http://localhost:8100"]
