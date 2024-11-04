@@ -27,10 +27,14 @@ async def token_verifier(
 ):
     if authorization:
         try:
-            access_token = authorization.split(" ")[1]
+            print(authorization)
+            authorization = authorization.split(" ")
+            if len(authorization) != 2:
+                raise JWTError
+            access_token = authorization[1]
             print("access token: ", access_token)
-            jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
-            return
+            decoded_data = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+            return decoded_data
         except JWTError:
             '''
             if refresh_token:

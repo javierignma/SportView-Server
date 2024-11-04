@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlmodel import Session, select
 from ..core.database import get_session
 from ..models.user import User
-from ..schemas.user import UserResponseSchema, UserCredentialsSchema
+from ..schemas.user import UserDataSchema, UserResponseSchema, UserCredentialsSchema
 from ..services.password_service import hash_password, verify_password 
 from ..services.jwt_service import create_access_token, create_refresh_token, token_verifier
 import urllib.parse
@@ -45,7 +45,7 @@ def read_user_by_id(user_id: int, session: Session = Depends(get_session), depen
     
     return user
 
-@router.get("/email/{user_email}", response_model=UserResponseSchema)
+@router.get("/email/{user_email}", response_model=UserDataSchema)
 def read_user_by_email(user_email: str, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
     try:
         user_email = urllib.parse.unquote(user_email)
@@ -91,4 +91,4 @@ def login(user_credentials: UserCredentialsSchema, session: Session = Depends(ge
 
 @router.get("/verify-token/")
 def verify_token(dependencies = Depends(token_verifier)):
-    return {"message": "Valid token."}
+    return {'email': dependencies["sub"]}

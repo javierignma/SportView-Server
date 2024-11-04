@@ -11,3 +11,8 @@ class UserResponseSchema(SQLModel, table=False):
 class UserCredentialsSchema(SQLModel, table=False):
     email: str
     password: str
+
+class UserDataSchema(SQLModel, table=False):
+    email: str
+    first_name: str
+    last_name: str
