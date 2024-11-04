@@ -10,7 +10,7 @@ import urllib.parse
 
 router = APIRouter()
 
-@router.post("/", response_model=UserResponseSchema)
+@router.post("/")
 def create_user(user: User, session: Session = Depends(get_session)):
     try:
         statement = select(User).where(User.email == user.email)
@@ -30,7 +30,7 @@ def create_user(user: User, session: Session = Depends(get_session)):
     except Exception as e:
         print(f"An error has ocurred: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
-    return user
+    return {"message": "User created."}
 
 @router.get("/id/{user_id}", response_model=UserResponseSchema)
 def read_user_by_id(user_id: int, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
