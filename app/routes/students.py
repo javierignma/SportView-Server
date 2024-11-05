@@ -88,17 +88,25 @@ def read_student_by_rut(student_rut: str, session: Session = Depends(get_session
 @router.put("/edit/id/{student_id}", response_model=Student)
 def update_student(student_id: int, student_update: Student, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
     try:
-        update_data = student_update.model_dump(exclude_unset=True)
-
-        statement = update(Student).where(Student.id == student_id).values(**update_data)
-        result = session.exec(statement)
-        student = result.first()
+        student = session.get(Student, student_id)
     except Exception as e:
-        print(f"An error has ocurred: {e}")
+        print(f"An error has ocurred searching for the student: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
     
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+
+    update_data = student_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(student, key, value)
+
+    try:
+        session.add(student)
+        session.commit()
+        session.refresh(student)
+    except Exception as e:
+        print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
         
     return student
 
