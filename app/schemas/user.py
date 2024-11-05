@@ -2,6 +2,7 @@ from sqlmodel import SQLModel, Field
 from typing import Optional
 
 class UserResponseSchema(SQLModel, table=False):
+    id: int
     email: str
     first_name: Optional[str]
     last_name: Optional[str]
@@ -13,6 +14,7 @@ class UserCredentialsSchema(SQLModel, table=False):
     password: str
 
 class UserDataSchema(SQLModel, table=False):
+    id: int
     email: str
     first_name: str
     last_name: str

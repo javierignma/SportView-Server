@@ -80,6 +80,7 @@ def login(user_credentials: UserCredentialsSchema, session: Session = Depends(ge
     #refresh_token = create_refresh_token({"sub": user.email})
     
     user = UserResponseSchema(
+        id=user.id,
         email=user.email, 
         first_name=user.first_name, 
         last_name=user.last_name, 
