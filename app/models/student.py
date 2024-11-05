@@ -8,6 +8,7 @@ class Student(SQLModel, table=True):
     name: str
     email: str = Field(index=True)
     rut: str = Field(index=True)
+    sex: str
     age: Optional[int]
     weight: Optional[float]
     height: Optional[float]
