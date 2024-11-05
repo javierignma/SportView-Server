@@ -36,6 +36,21 @@ def read_student_by_id(student_id: int, session: Session = Depends(get_session),
     
     return student
 
+@router.get("/{instructor_id}", response_model=list[Student])
+def read_students(instructor_id: int, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
+    try:
+        statement = select(Student).where(Student.instructor_id == instructor_id)
+        result = session.exec(statement)
+        students = result.all()
+    except Exception as e:
+        print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+    if not students:
+        raise HTTPException(status_code=404, detail="Students not found")
+    
+    return students
+
 @router.get("/email/{student_email}", response_model=Student)
 def read_student_by_email(student_email: str, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
     try:
