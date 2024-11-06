@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.routes import attendance
 from .routes import students, users
 from .core.database import create_db_and_tables
 
@@ -11,6 +13,7 @@ app = FastAPI(
 
 app.include_router(students.router, prefix="/api/v1/students", tags=["Students"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
+app.include_router(attendance.router, prefix="/api/v1/attendance", tags=["Attendance"])
 
 origins = ["http://localhost:8100"]
 

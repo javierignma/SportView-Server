@@ -13,7 +13,7 @@ router = APIRouter()
     "/",
     response_model=Student
 )
-def create_student(student: Student, session: Session = Depends(get_session)):
+def create_student(student: Student, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
     try:
         session.add(student)
         session.commit()

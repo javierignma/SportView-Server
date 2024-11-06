@@ -15,7 +15,7 @@ class Student(SQLModel, table=True):
 
 class StudentProgress(SQLModel, table=True):
     student_id: int = Field(foreign_key="student.id", primary_key=True)
-    progress_date: date = Field(primary_key=True)
+    progress_date: date
     technique: Optional[int]
     physique: Optional[int]
     combat_iq: Optional[int]
