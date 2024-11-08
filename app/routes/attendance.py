@@ -11,12 +11,10 @@ from ..core.database import get_session
 router = APIRouter()
 
 @router.post(
-    "/{year}/{month}/{day}"
+    "/{date}"
 )
-def add_attendance(year: int, month: int, day: int, attendances: list[AttendanceRequestSchema], session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
+def add_attendance(date: Date, attendances: list[AttendanceRequestSchema], session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
     dates_id = None
-    
-    date = Date(year, month, day)
 
     try:
         statement = select(Dates).where(Dates.date == date)
@@ -67,13 +65,11 @@ def add_attendance(year: int, month: int, day: int, attendances: list[Attendance
     return {"message": "Attendance added."}
 
 @router.get(
-    "/{instructor_id}/{year}/{month}/{day}",
+    "/{instructor_id}/{date}",
     response_model=list[Attendance]
 )
-def get_attendances(instructor_id: int, year: int, month: int, day: int, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
+def get_attendances(instructor_id: int, date: Date, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
     dates_id = None
-    
-    date = Date(year, month, day)
 
     try:
         statement = select(Dates).where(Dates.date == date)
