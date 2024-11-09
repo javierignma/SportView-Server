@@ -1,7 +1,11 @@
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel
 from typing import Optional
+from datetime import date as Date
 
-class AttendanceRequestSchema(SQLModel, table=False):
-    instructor_id: int = Field(foreign_key="user.id")
-    student_id: int = Field(foreign_key="student.id")
-    present: Optional[bool]
+class AttendanceResponse(SQLModel, table=False):
+    id: int
+    instructor_id: int 
+    student_id: int
+    student_name: str
+    date: Date
+    present: bool

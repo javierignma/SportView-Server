@@ -3,59 +3,24 @@ from fastapi.responses import JSONResponse
 from sqlmodel import Session, and_, select, update
 from datetime import date as Date
 
-from app.models.attendance import Attendance, Dates
-from app.schemas.attendance import AttendanceRequestSchema
+from app.models.attendance import Attendance
+from app.models.student import Student
+from app.schemas.attendance import AttendanceResponse
 from app.services.jwt_service import token_verifier
 from ..core.database import get_session
 
 router = APIRouter()
 
 @router.post(
-    "/{date}"
+    "/"
 )
-def add_attendance(date: Date, attendances: list[AttendanceRequestSchema], session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
-    dates_id = None
-
+def add_attendances(attendances: list[Attendance], session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):   
     try:
-        statement = select(Dates).where(Dates.date == date)
-        result = session.exec(statement)
-        dates_id = result.first()
-    except Exception as e:
-        print(f"An error has ocurred on first section: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-    
-    if not dates_id:
-        try:
-            date_object = Dates(date=date)
-            session.add(date_object)
-            session.commit()
-            session.refresh(date_object)
-
-            statement = select(Dates).where(Dates.date == date)
-            result = session.exec(statement)
-            dates_id = result.first()
-        except Exception as e:
-            print(f"An error has ocurred on second section: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
-    
-    try:
-        new_attendances = []
-        for attendance in attendances:
-            new_attendance = Attendance(
-                id=None,
-                instructor_id=attendance.instructor_id,
-                student_id=attendance.student_id,
-                dates_id=dates_id.id,
-                present=attendance.present,
-            )
-            print(new_attendance)
-            new_attendances.append(new_attendance)
-
-        session.add_all(new_attendances)
+        session.add_all(attendances)
         session.commit()
         
-        for new_attendance in new_attendances:
-            session.refresh(new_attendance)
+        for attendance in attendances:
+            session.refresh(attendance)
 
     except Exception as e:
         print(f"An error has ocurred on third section: {e}")
@@ -66,29 +31,27 @@ def add_attendance(date: Date, attendances: list[AttendanceRequestSchema], sessi
 
 @router.get(
     "/{instructor_id}/{date}",
-    response_model=list[Attendance]
+    response_model=list[AttendanceResponse]
 )
 def get_attendances(instructor_id: int, date: Date, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
-    dates_id = None
-
     try:
-        statement = select(Dates).where(Dates.date == date)
-        result = session.exec(statement)
-        dates_id = result.first()
-    except Exception as e:
-        print(f"An error has ocurred on first section: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-    
-    if not dates_id:
-        raise HTTPException(status_code=404, detail="Date not found")
-    
-    dates_id = dates_id.id
-    
-    try:
-        statement = select(Attendance).where(and_(
-            Attendance.instructor_id == instructor_id,
-            Attendance.dates_id == dates_id
-        ))
+        statement = (
+            select(
+                Attendance.id,
+                Attendance.instructor_id,
+                Attendance.student_id,
+                (Student.name).label("student_name"),
+                Attendance.date,
+                Attendance.present
+            )
+            .join(Student, Attendance.student_id == Student.id)
+            .where(
+                and_(
+                    Attendance.instructor_id == instructor_id,
+                    Attendance.date == date
+                )
+            )
+        )
         result = session.exec(statement)
         attendances = result.all()
     except Exception as e:
@@ -100,30 +63,35 @@ def get_attendances(instructor_id: int, date: Date, session: Session = Depends(g
     
     return attendances
 
-@router.put("/{attendance_id}")
-def update_attendance(attendance_id: int, attendance_update: Attendance, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
+@router.put("/")
+def update_attendances(
+    attendances: list[Attendance],
+    session: Session = Depends(get_session),
+    dependencies = [Depends(token_verifier)]
+):
     try:
-        attendance = session.get(Attendance, attendance_id)
-    except Exception as e:
-        print(f"An error has ocurred searching for the attendance: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-    
-    if not attendance:
-        raise HTTPException(status_code=404, detail="Attendance not found")
+        with session.begin():
+            for attendance in attendances:
+                existing_attendance = session.get(Attendance, attendance.id)
 
-    update_data = attendance_update.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(attendance, key, value)
+                if existing_attendance:
+                    existing_attendance.instructor_id = attendance.instructor_id
+                    existing_attendance.student_id = attendance.student_id
+                    existing_attendance.date = attendance.date
+                    existing_attendance.present = attendance.present
+                else:
+                    raise HTTPException(status_code=404, detail=f"Attendance with id {attendance.id} not found")
 
-    try:
-        session.add(attendance)
-        session.commit()
-        session.refresh(attendance)
+        return {"message": "Attendances updated successfully"}
+
+    except HTTPException as e:
+        print(f"An error has ocurred: {e}")
+        session.rollback()
+
     except Exception as e:
+        session.rollback()
         print(f"An error has ocurred: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
-        
-    return {"message": "Attendance updated."}
 
 @router.delete("/{attendance_id}")
 def delete_attendance(attendance_id: int, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
@@ -142,3 +110,20 @@ def delete_attendance(attendance_id: int, session: Session = Depends(get_session
     except Exception as e:
         print(f"An error has ocurred: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.get(
+    "/dates",
+    response_model=list[Date]
+)
+def get_dates(session: Session = Depends(get_session)):
+    try:
+        statement = select(Attendance.date).distinct().order_by(Attendance.date)
+        results = session.exec(statement).all()
+    except Exception as e:
+        print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+    if not results:
+        raise HTTPException(status_code=404, detail="Dates not found")
+    
+    return results
