@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from sqlmodel import Session, select, update
+from sqlmodel import Session, and_, select, update
 import urllib
 
 from app.models.attendance import Attendance
 from app.services.jwt_service import token_verifier
 from ..core.database import get_session
 from ..models.student import Student, StudentProgress
+from datetime import date as Date
 
 router = APIRouter()
 
@@ -111,17 +112,6 @@ def update_student(student_id: int, student_update: Student, session: Session = 
         
     return student
 
-@router.post("/progress/id/", response_model=StudentProgress)
-def post_student_progress(student_progress: StudentProgress, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
-    try:
-        session.add(student_progress)
-        session.commit()
-        session.refresh(student_progress)
-    except Exception as e:
-        print(f"An error has ocurred: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-    return student_progress
-
 @router.delete("/delete/id/{student_id}")
 def delete_student(student_id: int, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
 
@@ -155,3 +145,59 @@ def delete_student(student_id: int, session: Session = Depends(get_session), dep
     except Exception as e:
         print(f"An error has ocurred: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+    
+@router.post(
+    "/progress/"
+)
+def create_student_progress(student_progress: StudentProgress, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
+    try:
+        session.add(student_progress)
+        session.commit()
+        session.refresh(student_progress)
+    except Exception as e:
+        print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+    return {"message": "Student progress created successfully"}
+
+@router.get("/progress/{student_id}/{date}", response_model=StudentProgress)
+def read_student_progress(student_id: int, date: Date, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
+    try: 
+        statement = select(StudentProgress).where(
+            and_(StudentProgress.student_id == student_id, StudentProgress.progress_date == date)
+        )
+        result = session.exec(statement).first()
+    except Exception as e:
+        print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+        
+    if not result:
+        raise HTTPException(status_code=404, detail="Student progress not found")
+    
+    student_progress = result
+
+    return student_progress
+
+@router.put("/progress/{student_progress_id}", response_model=StudentProgress)
+def update_student_progress(student_progress_id: int, student_progress_update: StudentProgress, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
+    try:
+        student_progress = session.get(StudentProgress, student_progress_id)
+    except Exception as e:
+        print(f"An error has ocurred searching for the student progress: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+    
+    if not student_progress:
+        raise HTTPException(status_code=404, detail="Student progress not found")
+
+    update_data = student_progress_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(student_progress, key, value)
+
+    try:
+        session.add(student_progress)
+        session.commit()
+        session.refresh(student_progress)
+    except Exception as e:
+        print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+        
+    return student_progress

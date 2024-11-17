@@ -14,7 +14,8 @@ class Student(SQLModel, table=True):
     height: Optional[float]
 
 class StudentProgress(SQLModel, table=True):
-    student_id: int = Field(foreign_key="student.id", primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    student_id: int = Field(foreign_key="student.id")
     progress_date: date
     technique: Optional[int]
     physique: Optional[int]
