@@ -190,7 +190,7 @@ def read_student_progress_average(student_id: int, session: Session = Depends(ge
             )
             .where(StudentProgress.student_id == student_id)
         )
-        result = session.exec(statement).one()
+        result = session.exec(statement).first()
     except Exception as e:
         print(f"An error has ocurred: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -232,7 +232,7 @@ def get_progress_dates(instructor_id: int, student_id: int, session: Session = D
     try: 
         statement = select(StudentProgress.progress_date).join(
             Student, Student.id == StudentProgress.student_id
-        ).where(and_(Student.instructor_id == instructor_id, Student.id == student_id))
+        ).where(and_(Student.instructor_id == instructor_id, Student.id == student_id)).distinct().order_by(StudentProgress.progress_date)
         results = session.exec(statement).all()
     except Exception as e:
         print(f"An error has ocurred: {e}")
