@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
+from sqlalchemy import func
 from sqlmodel import Session, and_, select, update
 import urllib
 
 from app.models.attendance import Attendance
+from app.schemas.students import StudentProgressAverage
 from app.services.jwt_service import token_verifier
 from ..core.database import get_session
 from ..models.student import Student, StudentProgress
@@ -177,6 +179,29 @@ def read_student_progress(student_id: int, date: Date, session: Session = Depend
 
     return student_progress
 
+@router.get("/progress/student-avg/{student_id}", response_model=StudentProgressAverage)
+def read_student_progress_average(student_id: int, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
+    try: 
+        statement = (
+            select(
+                func.avg(StudentProgress.technique).label("technique_avg"),
+                func.avg(StudentProgress.physique).label("physique_avg"),
+                func.avg(StudentProgress.combat_iq).label("combat_iq_avg")
+            )
+            .where(StudentProgress.student_id == student_id)
+        )
+        result = session.exec(statement).one()
+    except Exception as e:
+        print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+        
+    if not result:
+        raise HTTPException(status_code=404, detail="Student progress average not found")
+    
+    student_progress = result
+
+    return student_progress
+
 @router.put("/progress/{student_progress_id}", response_model=StudentProgress)
 def update_student_progress(student_progress_id: int, student_progress_update: StudentProgress, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
     try:
@@ -202,20 +227,20 @@ def update_student_progress(student_progress_id: int, student_progress_update: S
         
     return student_progress
 
-@router.get("/progress/dates/{instructor_id}", response_model=list[Date])
-def get_progress_dates(instructor_id: int, date: Date, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
+@router.get("/progress/dates/{instructor_id}/{student_id}", response_model=list[Date])
+def get_progress_dates(instructor_id: int, student_id: int, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
     try: 
         statement = select(StudentProgress.progress_date).join(
             Student, Student.id == StudentProgress.student_id
-        ).where(Student.instructor_id == instructor_id)
-        result = session.exec(statement).first()
+        ).where(and_(Student.instructor_id == instructor_id, Student.id == student_id))
+        results = session.exec(statement).all()
     except Exception as e:
         print(f"An error has ocurred: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
         
-    if not result:
+    if not results:
         raise HTTPException(status_code=404, detail="Student progress dates not found")
     
-    dates = result
+    dates = results
 
     return dates
