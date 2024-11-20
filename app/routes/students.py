@@ -159,7 +159,7 @@ def create_student_progress(student_progress: StudentProgress, session: Session 
         raise HTTPException(status_code=500, detail="Internal server error")
     return {"message": "Student progress created successfully"}
 
-@router.get("/progress/{student_id}/{date}", response_model=StudentProgress)
+@router.get("/progress/student/{student_id}/{date}", response_model=StudentProgress)
 def read_student_progress(student_id: int, date: Date, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
     try: 
         statement = select(StudentProgress).where(
@@ -201,3 +201,21 @@ def update_student_progress(student_progress_id: int, student_progress_update: S
         raise HTTPException(status_code=500, detail="Internal server error")
         
     return student_progress
+
+@router.get("/progress/dates/{instructor_id}", response_model=list[Date])
+def get_progress_dates(instructor_id: int, date: Date, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
+    try: 
+        statement = select(StudentProgress.progress_date).join(
+            Student, Student.id == StudentProgress.student_id
+        ).where(Student.instructor_id == instructor_id)
+        result = session.exec(statement).first()
+    except Exception as e:
+        print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+        
+    if not result:
+        raise HTTPException(status_code=404, detail="Student progress dates not found")
+    
+    dates = result
+
+    return dates
