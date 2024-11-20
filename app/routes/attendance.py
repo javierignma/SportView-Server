@@ -30,7 +30,7 @@ def add_attendances(attendances: list[Attendance], session: Session = Depends(ge
     return {"message": "Attendance added."}
 
 @router.get(
-    "/{instructor_id}/{date}",
+    "/all/{instructor_id}/{date}",
     response_model=list[AttendanceResponse]
 )
 def get_attendances(instructor_id: int, date: Date, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
@@ -112,12 +112,12 @@ def delete_attendance(attendance_id: int, session: Session = Depends(get_session
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get(
-    "/dates",
+    "/dates/{instructor_id}",
     response_model=list[Date]
 )
-def get_dates(session: Session = Depends(get_session)):
+def get_dates(instructor_id: int, session: Session = Depends(get_session)):
     try:
-        statement = select(Attendance.date).distinct().order_by(Attendance.date)
+        statement = select(Attendance.date).where(Attendance.instructor_id == instructor_id).distinct().order_by(Attendance.date)
         results = session.exec(statement).all()
     except Exception as e:
         print(f"An error has ocurred: {e}")
