@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
+from sqlalchemy import Float, Integer, cast, func
 from sqlmodel import Session, and_, select, update
 from datetime import date as Date
 
 from app.models.attendance import Attendance
 from app.models.student import Student
-from app.schemas.attendance import AttendanceResponse
+from app.schemas.attendance import AttendanceAvg, AttendanceResponse
 from app.services.jwt_service import token_verifier
 from ..core.database import get_session
 
@@ -127,3 +128,24 @@ def get_dates(instructor_id: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Dates not found")
     
     return results
+
+@router.get("/avg/{student_id}", response_model=AttendanceAvg)
+def get_avg_attendance(
+    student_id: int,
+    session: Session = Depends(get_session),
+):
+    try:
+        query = (
+            select(func.avg(cast(Attendance.present, Integer)).label("avg_attendance"))
+            .where(Attendance.student_id == student_id)
+        )
+        result = session.exec(query).first()
+    except Exception as e:
+        print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="Student not found or no attendance data.")
+    return AttendanceAvg(student_id=student_id, avg_attendance=result)
+
+    

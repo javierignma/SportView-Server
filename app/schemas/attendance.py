@@ -9,3 +9,7 @@ class AttendanceResponse(SQLModel, table=False):
     student_name: str
     date: Date
     present: bool
+
+class AttendanceAvg(SQLModel, table=False):
+    student_id: int
+    avg_attendance: float
