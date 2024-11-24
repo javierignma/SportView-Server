@@ -182,6 +182,19 @@ def read_student_progress(student_id: int, date: Date, session: Session = Depend
 @router.get("/progress/student-avg/{student_id}", response_model=StudentProgressAverage)
 def read_student_progress_average(student_id: int, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
     try: 
+        pre_statement = select(StudentProgress).where(StudentProgress.student_id == student_id)
+
+        pre_result = session.exec(pre_statement).first()
+
+        if not pre_result:
+            result = StudentProgressAverage(
+                technique_avg=0,
+                physique_avg=0,
+                combat_iq_avg=0,
+            )
+
+            return result
+
         statement = (
             select(
                 func.avg(StudentProgress.technique).label("technique_avg"),
