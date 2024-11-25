@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import Float, Integer, cast, func
-from sqlmodel import Session, and_, select, update
+from sqlmodel import Session, and_, extract, select, update
 from datetime import date as Date
 
 from app.models.attendance import Attendance
@@ -129,16 +129,23 @@ def get_dates(instructor_id: int, session: Session = Depends(get_session)):
     
     return results
 
-@router.get("/avg/{student_id}", response_model=AttendanceAvg)
+@router.get("/avg/{student_id}/{month}", response_model=AttendanceAvg)
 def get_avg_attendance(
     student_id: int,
+    month: int,
     session: Session = Depends(get_session),
 ):
     try:
-        query = (
-            select(func.avg(cast(Attendance.present, Integer)).label("avg_attendance"))
-            .where(Attendance.student_id == student_id)
-        )
+        if month:
+            query = (
+                select(func.avg(cast(Attendance.present, Integer)).label("avg_attendance"))
+                .where(and_(Attendance.student_id == student_id, extract("month", Attendance.date) == month))
+            )
+        else:
+            query = (
+                select(func.avg(cast(Attendance.present, Integer)).label("avg_attendance"))
+                .where(Attendance.student_id == student_id)
+            )
         result = session.exec(query).first()
     except Exception as e:
         print(f"An error has ocurred: {e}")
