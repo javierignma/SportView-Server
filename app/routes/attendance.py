@@ -136,7 +136,7 @@ def get_avg_attendance(
     session: Session = Depends(get_session),
 ):
     try:
-        if month:
+        if month != 0:
             query = (
                 select(func.avg(cast(Attendance.present, Integer)).label("avg_attendance"))
                 .where(and_(Attendance.student_id == student_id, extract("month", Attendance.date) == month))
