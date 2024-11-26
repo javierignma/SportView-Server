@@ -129,8 +129,19 @@ def delete_student(student_id: int, session: Session = Depends(get_session), dep
     except Exception as e:
         print(f"An error has ocurred: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
-    
-    # Do the same with StudentProgress
+
+    try:
+        statement = select(StudentProgress).where(StudentProgress.student_id == student_id)
+        result = session.exec(statement)
+        student_progress = result.first()
+
+        if student_progress:
+            session.delete(student_progress)
+            session.commit()
+
+    except Exception as e:
+        print(f"An error has ocurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
     try:
         statement = select(Student).where(Student.id == student_id)
