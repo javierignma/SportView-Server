@@ -152,6 +152,7 @@ def delete_student(student_id: int, session: Session = Depends(get_session), dep
     "/progress/"
 )
 def create_student_progress(student_progress: StudentProgress, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
+    student_progress.id = None
     try:
         session.add(student_progress)
         session.commit()
