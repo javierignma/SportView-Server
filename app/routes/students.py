@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import func
-from sqlmodel import Session, and_, select, update
+from sqlmodel import Session, and_, extract, select, update
 import urllib
 
 from app.models.attendance import Attendance
@@ -179,10 +179,13 @@ def read_student_progress(student_id: int, date: Date, session: Session = Depend
 
     return student_progress
 
-@router.get("/progress/student-avg/{student_id}", response_model=StudentProgressAverage)
-def read_student_progress_average(student_id: int, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
+@router.get("/progress/student-avg/{student_id}/{month}", response_model=StudentProgressAverage)
+def read_student_progress_average(student_id: int, month: int, session: Session = Depends(get_session), dependencies = [Depends(token_verifier)]):
     try: 
-        pre_statement = select(StudentProgress).where(StudentProgress.student_id == student_id)
+        if month != 0:
+            pre_statement = select(StudentProgress).where(and_(StudentProgress.student_id == student_id, extract("month", StudentProgress.progress_date) == month))
+        else:
+            pre_statement = select(StudentProgress).where(StudentProgress.student_id == student_id)
 
         pre_result = session.exec(pre_statement).first()
 
@@ -194,15 +197,26 @@ def read_student_progress_average(student_id: int, session: Session = Depends(ge
             )
 
             return result
-
-        statement = (
-            select(
-                func.avg(StudentProgress.technique).label("technique_avg"),
-                func.avg(StudentProgress.physique).label("physique_avg"),
-                func.avg(StudentProgress.combat_iq).label("combat_iq_avg")
+        
+        if month != 0:
+            statement = (
+                select(
+                    func.avg(StudentProgress.technique).label("technique_avg"),
+                    func.avg(StudentProgress.physique).label("physique_avg"),
+                    func.avg(StudentProgress.combat_iq).label("combat_iq_avg")
+                )
+                .where(and_(StudentProgress.student_id == student_id, extract("month", StudentProgress.progress_date) == month))
             )
-            .where(StudentProgress.student_id == student_id)
-        )
+        else:
+            statement = (
+                select(
+                    func.avg(StudentProgress.technique).label("technique_avg"),
+                    func.avg(StudentProgress.physique).label("physique_avg"),
+                    func.avg(StudentProgress.combat_iq).label("combat_iq_avg")
+                )
+                .where(StudentProgress.student_id == student_id)
+            )
+        
         result = session.exec(statement).first()
     except Exception as e:
         print(f"An error has ocurred: {e}")
